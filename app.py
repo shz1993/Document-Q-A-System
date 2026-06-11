@@ -7,11 +7,11 @@ import tempfile
 # Document processing
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import FAISS  # Ganti Chroma dengan FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
-from langchain_classic.chains import RetrievalQA
-from langchain_classic.prompts import PromptTemplate
+from langchain.chains import RetrievalQA
+from langchain.prompts import PromptTemplate
 
 # Utils
 import pandas as pd
@@ -29,7 +29,6 @@ with st.sidebar:
     st.markdown("**✨ 100% GRATIS - No OpenAI needed!**")
     st.markdown("---")
     
-    # Ambil API key dari secrets (AMAN)
     groq_api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
     
     if groq_api_key:
@@ -51,7 +50,7 @@ with st.sidebar:
         """
         - **LLM**: Llama 3 70B (via Groq)
         - **Embeddings**: HuggingFace (free)
-        - **Vector DB**: ChromaDB
+        - **Vector DB**: FAISS
         """
     )
     
@@ -73,7 +72,7 @@ st.markdown("""
     Upload dokumen Anda (PDF, TXT) lalu tanyakan apapun tentang isinya.
     AI akan menjawab **hanya berdasarkan dokumen yang Anda upload**.
     
-    🔥 **Powered by Groq Llama 3 (Gratis) + HuggingFace Embeddings**
+    🔥 **Powered by Groq Llama 3 (Gratis) + HuggingFace Embeddings + FAISS**
 """)
 
 # ---------- Inisialisasi Session State ----------
@@ -89,10 +88,10 @@ if "qa_chain" not in st.session_state:
 if "documents_processed" not in st.session_state:
     st.session_state.documents_processed = False
 
-# ---------- Fungsi Inisialisasi Embeddings (Gratis) ----------
+# ---------- Fungsi Inisialisasi Embeddings ----------
 @st.cache_resource
 def get_embeddings():
-    """Load HuggingFace embeddings (gratis, lokal)."""
+    """Load HuggingFace embeddings (gratis)."""
     with st.spinner("🔄 Loading embeddings model (sekali saja)..."):
         model_name = "sentence-transformers/all-MiniLM-L6-v2"
         embeddings = HuggingFaceEmbeddings(
@@ -102,9 +101,9 @@ def get_embeddings():
         )
     return embeddings
 
-# ---------- Fungsi Proses Dokumen ----------
+# ---------- Fungsi Proses Dokumen dengan FAISS ----------
 def process_documents(uploaded_files, groq_api_key):
-    """Process uploaded documents and create vector store."""
+    """Process uploaded documents and create FAISS vector store."""
     if not groq_api_key:
         st.error("❌ Masukkan Groq API Key terlebih dahulu!")
         return False
@@ -115,7 +114,6 @@ def process_documents(uploaded_files, groq_api_key):
     
     with st.spinner("📖 Memproses dokumen..."):
         all_documents = []
-        
         progress_bar = st.progress(0)
         
         for idx, uploaded_file in enumerate(uploaded_files):
@@ -148,6 +146,7 @@ def process_documents(uploaded_files, groq_api_key):
             st.error("Tidak ada dokumen yang berhasil diproses!")
             return False
         
+        # Split documents into chunks
         with st.spinner("✂️ Memecah dokumen menjadi chunks..."):
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=1000,
@@ -157,25 +156,24 @@ def process_documents(uploaded_files, groq_api_key):
             chunks = text_splitter.split_documents(all_documents)
             st.info(f"✅ {len(chunks)} chunks dibuat dari {len(uploaded_files)} file")
         
-        with st.spinner("🗂️ Membuat vector database (pakai HuggingFace)..."):
+        # Create FAISS vector store (TIDAK PERLU persist_directory)
+        with st.spinner("🗂️ Membuat vector database dengan FAISS..."):
             embeddings = get_embeddings()
             
-            if os.path.exists("./chroma_db"):
-                shutil.rmtree("./chroma_db")
-            
-            vectorstore = Chroma.from_documents(
+            # FAISS tidak perlu persist_directory
+            vectorstore = FAISS.from_documents(
                 documents=chunks,
-                embedding=embeddings,
-                persist_directory="./chroma_db"
+                embedding=embeddings
             )
-            vectorstore.persist()
             
             st.session_state.vectorstore = vectorstore
             
+            # Create retriever
             retriever = vectorstore.as_retriever(
                 search_kwargs={"k": 4}
             )
             
+            # Custom prompt untuk grounding
             prompt_template = """
             Anda adalah asisten yang membantu menjawab pertanyaan berdasarkan DOKUMEN yang diberikan.
             
@@ -183,8 +181,7 @@ def process_documents(uploaded_files, groq_api_key):
             1. Gunakan ONLY informasi dari konteks berikut untuk menjawab pertanyaan.
             2. Jika jawaban tidak ada dalam konteks, katakan: "Maaf, informasi tersebut tidak ditemukan dalam dokumen yang diupload."
             3. JANGAN menggunakan pengetahuan umum Anda.
-            4. JANGAN membuat informasi.
-            5. Jawab dalam Bahasa Indonesia jika pertanyaan dalam Bahasa Indonesia.
+            4. Jawab dalam Bahasa Indonesia jika pertanyaan dalam Bahasa Indonesia.
             
             Konteks:
             {context}
@@ -199,6 +196,7 @@ def process_documents(uploaded_files, groq_api_key):
                 input_variables=["context", "question"]
             )
             
+            # Initialize Groq Llama 3
             llm = ChatGroq(
                 model="llama3-70b-8192",
                 temperature=0,
@@ -284,7 +282,6 @@ if st.session_state.documents_processed:
                 except Exception as e:
                     st.error(f"Error: {e}")
     
-    # Clear chat button
     col1, col2 = st.columns([1, 5])
     with col1:
         if st.button("🗑️ Clear Chat", use_container_width=True):
@@ -300,6 +297,6 @@ else:
 # ---------- Footer ----------
 st.markdown("---")
 st.caption(
-    "🔍 Built with **LangChain + ChromaDB + Groq Llama 3 + HuggingFace** | "
+    "🔍 Built with **LangChain + FAISS + Groq Llama 3 + HuggingFace** | "
     "100% Gratis - No OpenAI needed | Answers grounded only in uploaded documents"
 )

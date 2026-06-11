@@ -2,7 +2,7 @@ streamlit
 langchain
 langchain-community
 langchain-groq
-chromadb
+faiss-cpu
 pypdf
 pandas
 sentence-transformers
