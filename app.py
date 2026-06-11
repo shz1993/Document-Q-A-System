@@ -4,13 +4,13 @@ import shutil
 from datetime import datetime
 import tempfile
 
-# Document processing
+# Document processing - VERSI YANG DIPERBAIKI
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
-from langchain.chains import RetrievalQA
+from langchain.chains import RetrievalQA  # Ini masih sama
 from langchain.prompts import PromptTemplate
 
 # Evaluation
@@ -34,20 +34,21 @@ with st.sidebar:
     st.markdown("**✨ 100% GRATIS - No OpenAI needed!**")
     st.markdown("---")
     
-# Ambil API key dari Streamlit secrets atau environment variable
-groq_api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
-
-if groq_api_key:
-    os.environ["GROQ_API_KEY"] = groq_api_key
-    st.success("✅ Groq API Key terdeteksi!")
-else:
-    st.error("❌ GROQ_API_KEY tidak ditemukan!")
-    st.markdown("""
-        **Setup API Key:**
-        1. Di Streamlit Cloud: Settings → Secrets
-        2. Tambahkan: `GROQ_API_KEY = "gsk_xxxxx"`
-    """)
-    st.stop()
+    # Ambil API key dari secrets (AMAN)
+    groq_api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
+    
+    if groq_api_key:
+        os.environ["GROQ_API_KEY"] = groq_api_key
+        st.success("✅ Groq API Key terdeteksi!")
+    else:
+        st.error("❌ GROQ_API_KEY tidak ditemukan di secrets!")
+        st.info("""
+            **Cara setup:**
+            1. Buka dashboard Streamlit Cloud
+            2. Settings → Secrets
+            3. Tambahkan: `GROQ_API_KEY = "gsk_xxxxx"`
+        """)
+        st.stop()
     
     st.markdown("---")
     st.markdown("### 🆓 Teknologi Gratis")
@@ -307,6 +308,7 @@ if uploaded_files:
         st.info(f"{len(uploaded_files)} file siap diproses")
     with col2:
         if st.button("🚀 Proses Dokumen", type="primary", use_container_width=True):
+            groq_api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
             if process_documents(uploaded_files, groq_api_key):
                 st.success("✅ Dokumen berhasil diproses! Silakan tanyakan sesuatu.")
                 st.rerun()
@@ -351,10 +353,6 @@ if st.session_state.documents_processed:
                     
                 except Exception as e:
                     st.error(f"Error: {e}")
-                    if "quota" in str(e).lower():
-                        st.warning("⚠️ Kuota Groq habis. Coba lagi nanti atau buat API key baru di console.groq.com")
-                    elif "api_key" in str(e).lower():
-                        st.warning("⚠️ Groq API Key tidak valid. Dapatkan gratis di console.groq.com")
     
     # ---------- Evaluation Section ----------
     st.markdown("---")
@@ -423,17 +421,12 @@ if st.session_state.documents_processed:
         metrics_df['Score'] = metrics_df['Score'].apply(lambda x: f"{x:.2%}")
         
         st.table(metrics_df)
-        
-        if st.session_state.evaluation_results['faithfulness'] < 0.7:
-            st.warning("⚠️ Faithfulness rendah - coba upload dokumen yang lebih jelas atau perbaiki chunking")
-        if st.session_state.evaluation_results['answer_relevancy'] < 0.7:
-            st.warning("⚠️ Answer relevancy rendah - perbaiki prompt template")
 
 else:
-    if groq_api_key:
+    if st.secrets.get("GROQ_API_KEY"):
         st.info("👈 Upload dokumen di atas untuk memulai")
     else:
-        st.warning("⚠️ **Masukkan Groq API Key di sidebar kiri terlebih dahulu!**\n\nDapatkan gratis di [console.groq.com](https://console.groq.com)")
+        st.warning("⚠️ **Masukkan Groq API Key di Secrets terlebih dahulu!**")
 
 # ---------- Footer ----------
 st.markdown("---")
