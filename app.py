@@ -198,10 +198,10 @@ def process_documents(uploaded_files, groq_api_key):
             
             # Initialize Groq Llama 3
             llm = ChatGroq(
-                model="llama3-70b-8192",
-                temperature=0,
-                groq_api_key=groq_api_key
-            )
+            model="mixtral-8x7b-32768",  # Model alternatif dari Mistral
+            temperature=0,
+            groq_api_key=groq_api_key
+)
             
             qa_chain = RetrievalQA.from_chain_type(
                 llm=llm,
