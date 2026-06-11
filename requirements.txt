@@ -5,7 +5,6 @@ langchain-groq
 langchain-classic
 chromadb
 pypdf
-ragas
 datasets
 pandas
 sentence-transformers
