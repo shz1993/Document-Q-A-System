@@ -2,6 +2,7 @@ streamlit
 langchain
 langchain-community
 langchain-groq
+langchain-classic
 chromadb
 pypdf
 ragas
