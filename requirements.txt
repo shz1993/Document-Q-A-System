@@ -1,0 +1,10 @@
+streamlit
+langchain
+langchain-community
+langchain-groq
+chromadb
+pypdf
+ragas
+datasets
+pandas
+sentence-transformers
