@@ -172,23 +172,26 @@ def process_documents(uploaded_files, groq_api_key):
                 search_kwargs={"k": 4}
             )
             
-            # Custom prompt for grounding
+            # Custom prompt for grounding - WILL FOLLOW USER'S LANGUAGE
             prompt_template = """
-            You are an assistant that answers questions based ONLY on the provided DOCUMENTS.
-            
-            IMPORTANT INSTRUCTIONS:
-            1. Use ONLY information from the context below to answer the question.
-            2. If the answer is not in the context, say: "Sorry, I couldn't find that information in the uploaded documents."
-            3. DO NOT use your general knowledge.
-            4. Answer in the same language as the question.
-            
-            Context:
-            {context}
-            
-            Question: {question}
-            
-            Answer (based only on documents):
-            """
+You are an assistant that answers questions based ONLY on the provided DOCUMENTS.
+
+IMPORTANT INSTRUCTIONS:
+1. Use ONLY information from the context below to answer the question.
+2. If the answer is not in the context, say: "Sorry, I couldn't find that information in the uploaded documents."
+3. DO NOT use your general knowledge.
+4. CRITICAL: Answer in the SAME LANGUAGE as the user's question. 
+   - If user asks in English → answer in English
+   - If user asks in Indonesian → answer in Indonesian
+   - If user asks in other languages → answer in that language
+
+Context:
+{context}
+
+User's Question: {question}
+
+Your Answer (in the same language as the user's question, based only on documents):
+"""
             
             PROMPT = PromptTemplate(
                 template=prompt_template,
