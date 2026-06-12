@@ -3,7 +3,7 @@
 Ask questions about your documents (PDF/TXT) in plain English – AI retrieves relevant chunks and answers only based on your files.
 
 ## Live Demo
-[Press here for live demo!](https://document-q-a-system-shz1993.streamlit.app)
+[Press here for live demo!](https://document-q-a-system-4bqwks5vtdwkzylpztg4na.streamlit.app/)
 
 ## Features
 - Chat interface with memory
