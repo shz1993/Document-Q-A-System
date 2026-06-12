@@ -16,7 +16,6 @@ Ask questions about your documents (PDF/TXT) in plain English – AI retrieves r
 - Streamlit (frontend)
 - Groq Llama 3 (free LLM)
 - HuggingFace Embeddings (free)
-- FAISS (vector database)
 - LangChain (RAG framework)
 
 ## How to Run Locally
