@@ -7,7 +7,7 @@ import tempfile
 # Document processing
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS  # Ganti Chroma dengan FAISS
+from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
 from langchain_classic.chains import RetrievalQA
@@ -16,9 +16,9 @@ from langchain_classic.prompts import PromptTemplate
 # Utils
 import pandas as pd
 
-# ---------- Konfigurasi ----------
+# ---------- Configuration ----------
 st.set_page_config(
-    page_title="Document Q&A System - RAG (Gratis)",
+    page_title="Document Q&A System - RAG (Free)",
     page_icon="📚",
     layout="wide"
 )
@@ -26,26 +26,26 @@ st.set_page_config(
 # ---------- Sidebar ----------
 with st.sidebar:
     st.title("📚 RAG Document Q&A")
-    st.markdown("**✨ 100% GRATIS - No OpenAI needed!**")
+    st.markdown("**✨ 100% FREE - No OpenAI needed!**")
     st.markdown("---")
     
     groq_api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
     
     if groq_api_key:
         os.environ["GROQ_API_KEY"] = groq_api_key
-        st.success("✅ Groq API Key terdeteksi!")
+        st.success("✅ Groq API Key detected!")
     else:
-        st.error("❌ GROQ_API_KEY tidak ditemukan di secrets!")
+        st.error("❌ GROQ_API_KEY not found in secrets!")
         st.info("""
-            **Cara setup:**
-            1. Buka dashboard Streamlit Cloud
-            2. Settings → Secrets
-            3. Tambahkan: `GROQ_API_KEY = "gsk_xxxxx"`
+            **How to setup:**
+            1. Open Streamlit Cloud dashboard
+            2. Go to Settings → Secrets
+            3. Add: `GROQ_API_KEY = "gsk_xxxxx"`
         """)
         st.stop()
     
     st.markdown("---")
-    st.markdown("### 🆓 Teknologi Gratis")
+    st.markdown("### 🆓 Free Technologies")
     st.info(
         """
         - **LLM**: Llama 3 70B (via Groq)
@@ -55,27 +55,27 @@ with st.sidebar:
     )
     
     st.markdown("---")
-    st.markdown("### 🎯 Fitur")
+    st.markdown("### 🎯 Features")
     st.markdown(
         """
         - ✅ Upload PDF/TXT
         - ✅ Semantic Search
         - ✅ Source Tracking
         - ✅ Chat History
-        - ✅ **100% Gratis!**
+        - ✅ **100% Free!**
         """
     )
 
 # ---------- Title ----------
-st.title("📄 Document Q&A System with RAG (Gratis)")
+st.title("📄 Document Q&A System with RAG (Free)")
 st.markdown("""
-    Upload dokumen Anda (PDF, TXT) lalu tanyakan apapun tentang isinya.
-    AI akan menjawab **hanya berdasarkan dokumen yang Anda upload**.
+    Upload your documents (PDF, TXT) and ask anything about their content.
+    The AI will answer **only based on your uploaded documents**.
     
-    🔥 **Powered by Groq Llama 3 (Gratis) + HuggingFace Embeddings + FAISS**
+    🔥 **Powered by Groq Llama 3 (Free) + HuggingFace Embeddings + FAISS**
 """)
 
-# ---------- Inisialisasi Session State ----------
+# ---------- Session State Initialization ----------
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -88,11 +88,11 @@ if "qa_chain" not in st.session_state:
 if "documents_processed" not in st.session_state:
     st.session_state.documents_processed = False
 
-# ---------- Fungsi Inisialisasi Embeddings ----------
+# ---------- Embeddings Initialization Function ----------
 @st.cache_resource
 def get_embeddings():
-    """Load HuggingFace embeddings (gratis)."""
-    with st.spinner("🔄 Loading embeddings model (sekali saja)..."):
+    """Load HuggingFace embeddings (free)."""
+    with st.spinner("🔄 Loading embeddings model (one time only)..."):
         model_name = "sentence-transformers/all-MiniLM-L6-v2"
         embeddings = HuggingFaceEmbeddings(
             model_name=model_name,
@@ -101,18 +101,18 @@ def get_embeddings():
         )
     return embeddings
 
-# ---------- Fungsi Proses Dokumen dengan FAISS ----------
+# ---------- Document Processing Function with FAISS ----------
 def process_documents(uploaded_files, groq_api_key):
     """Process uploaded documents and create FAISS vector store."""
     if not groq_api_key:
-        st.error("❌ Masukkan Groq API Key terlebih dahulu!")
+        st.error("❌ Please enter your Groq API Key first!")
         return False
     
     if not uploaded_files:
-        st.error("❌ Upload file terlebih dahulu!")
+        st.error("❌ Please upload files first!")
         return False
     
-    with st.spinner("📖 Memproses dokumen..."):
+    with st.spinner("📖 Processing documents..."):
         all_documents = []
         progress_bar = st.progress(0)
         
@@ -143,24 +143,23 @@ def process_documents(uploaded_files, groq_api_key):
             progress_bar.progress((idx + 1) / len(uploaded_files))
         
         if not all_documents:
-            st.error("Tidak ada dokumen yang berhasil diproses!")
+            st.error("No documents were successfully processed!")
             return False
         
         # Split documents into chunks
-        with st.spinner("✂️ Memecah dokumen menjadi chunks..."):
+        with st.spinner("✂️ Splitting documents into chunks..."):
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=1000,
                 chunk_overlap=200,
                 separators=["\n\n", "\n", " ", ""]
             )
             chunks = text_splitter.split_documents(all_documents)
-            st.info(f"✅ {len(chunks)} chunks dibuat dari {len(uploaded_files)} file")
+            st.info(f"✅ {len(chunks)} chunks created from {len(uploaded_files)} file(s)")
         
-        # Create FAISS vector store (TIDAK PERLU persist_directory)
-        with st.spinner("🗂️ Membuat vector database dengan FAISS..."):
+        # Create FAISS vector store
+        with st.spinner("🗂️ Creating vector database with FAISS..."):
             embeddings = get_embeddings()
             
-            # FAISS tidak perlu persist_directory
             vectorstore = FAISS.from_documents(
                 documents=chunks,
                 embedding=embeddings
@@ -173,22 +172,22 @@ def process_documents(uploaded_files, groq_api_key):
                 search_kwargs={"k": 4}
             )
             
-            # Custom prompt untuk grounding
+            # Custom prompt for grounding
             prompt_template = """
-            Anda adalah asisten yang membantu menjawab pertanyaan berdasarkan DOKUMEN yang diberikan.
+            You are an assistant that answers questions based ONLY on the provided DOCUMENTS.
             
-            INSTRUKSI PENTING:
-            1. Gunakan ONLY informasi dari konteks berikut untuk menjawab pertanyaan.
-            2. Jika jawaban tidak ada dalam konteks, katakan: "Maaf, informasi tersebut tidak ditemukan dalam dokumen yang diupload."
-            3. JANGAN menggunakan pengetahuan umum Anda.
-            4. Jawab dalam Bahasa Indonesia jika pertanyaan dalam Bahasa Indonesia.
+            IMPORTANT INSTRUCTIONS:
+            1. Use ONLY information from the context below to answer the question.
+            2. If the answer is not in the context, say: "Sorry, I couldn't find that information in the uploaded documents."
+            3. DO NOT use your general knowledge.
+            4. Answer in the same language as the question.
             
-            Konteks:
+            Context:
             {context}
             
-            Pertanyaan: {question}
+            Question: {question}
             
-            Jawaban (berdasarkan dokumen saja):
+            Answer (based only on documents):
             """
             
             PROMPT = PromptTemplate(
@@ -198,10 +197,10 @@ def process_documents(uploaded_files, groq_api_key):
             
             # Initialize Groq Llama 3
             llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
-            temperature=0,
-            groq_api_key=groq_api_key
-)
+                model="llama-3.3-70b-versatile",
+                temperature=0,
+                groq_api_key=groq_api_key
+            )
             
             qa_chain = RetrievalQA.from_chain_type(
                 llm=llm,
@@ -216,50 +215,50 @@ def process_documents(uploaded_files, groq_api_key):
             
             return True
 
-# ---------- Tampilkan Riwayat Chat ----------
+# ---------- Display Chat History ----------
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
         if "sources" in message:
-            with st.expander("📚 Lihat sumber dokumen"):
+            with st.expander("📚 View document sources"):
                 for i, source in enumerate(message["sources"], 1):
                     st.caption(f"{i}. {source}")
 
 # ---------- Upload Section ----------
 st.markdown("---")
-st.subheader("📤 1. Upload Dokumen")
+st.subheader("📤 1. Upload Documents")
 
 uploaded_files = st.file_uploader(
-    "Upload PDF atau TXT files",
+    "Upload PDF or TXT files",
     type=["pdf", "txt"],
     accept_multiple_files=True,
-    help="Upload dokumen yang ingin Anda tanyakan"
+    help="Upload documents you want to ask questions about"
 )
 
 if uploaded_files:
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.info(f"{len(uploaded_files)} file siap diproses")
+        st.info(f"{len(uploaded_files)} file(s) ready to process")
     with col2:
-        if st.button("🚀 Proses Dokumen", type="primary", use_container_width=True):
+        if st.button("🚀 Process Documents", type="primary", use_container_width=True):
             groq_api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
             if process_documents(uploaded_files, groq_api_key):
-                st.success("✅ Dokumen berhasil diproses! Silakan tanyakan sesuatu.")
+                st.success("✅ Documents processed successfully! Ask me anything.")
                 st.rerun()
 
 # ---------- Chat Section ----------
 if st.session_state.documents_processed:
     st.markdown("---")
-    st.subheader("💬 2. Tanyakan Tentang Dokumen")
+    st.subheader("💬 2. Ask About Your Documents")
     
-    if question := st.chat_input("Contoh: 'Apa topik utama dokumen ini?' atau 'Ringkaskan kebijakan yang disebutkan...'"):
+    if question := st.chat_input("Example: 'What is the main topic of this document?' or 'Summarize the key points...'"):
         
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.write(question)
         
         with st.chat_message("assistant"):
-            with st.spinner("🔍 Mencari jawaban di dokumen..."):
+            with st.spinner("🔍 Searching for answers in your documents..."):
                 try:
                     result = st.session_state.qa_chain.invoke({"query": question})
                     answer = result["result"]
@@ -269,7 +268,7 @@ if st.session_state.documents_processed:
                     st.write(answer)
                     
                     if sources:
-                        with st.expander("📚 Sumber dokumen"):
+                        with st.expander("📚 Document sources"):
                             for source in sources:
                                 st.caption(f"📄 {source}")
                     
@@ -290,13 +289,13 @@ if st.session_state.documents_processed:
 
 else:
     if st.secrets.get("GROQ_API_KEY"):
-        st.info("👈 Upload dokumen di atas untuk memulai")
+        st.info("👈 Upload documents above to get started")
     else:
-        st.warning("⚠️ **Masukkan Groq API Key di Secrets terlebih dahulu!**")
+        st.warning("⚠️ **Please add your Groq API Key in Secrets first!**")
 
 # ---------- Footer ----------
 st.markdown("---")
 st.caption(
     "🔍 Built with **LangChain + FAISS + Groq Llama 3 + HuggingFace** | "
-    "100% Gratis - No OpenAI needed | Answers grounded only in uploaded documents"
+    "100% Free - No OpenAI needed | Answers grounded only in uploaded documents"
 )
